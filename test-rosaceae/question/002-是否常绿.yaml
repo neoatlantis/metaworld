@@ -1,0 +1,6 @@
+name: 是否常绿?
+category: 基本信息
+
+choose:
+    - 常绿
+    - 落叶

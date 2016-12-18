@@ -1,0 +1,4 @@
+name: 种子数目
+category: 种子
+range:
+    min: 0

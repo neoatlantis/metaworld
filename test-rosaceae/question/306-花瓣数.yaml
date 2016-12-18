@@ -1,0 +1,5 @@
+name: 花瓣数
+category: 花
+range:
+    min: 0
+    # max: 不定义， 无上限
