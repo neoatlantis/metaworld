@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import yaml
 import sys
 import os
@@ -125,6 +126,31 @@ class ChooseTypeQuestion:
             return 1.0 * x / s
         return 0.0
 
+    def compileToJS(self, functionName=''):
+        """Returns a JavaScript function, accepting 2 arguments:
+            function functionName(standardAnswer, userAnswer)
+        """
+        choices = list(self.__choices.keys())
+        matrix = {}
+        for i in range(0, len(choices)):
+            entry = {}
+            for j in range(0, len(choices)):
+                if j == i: continue
+                result = self.calculatePoints(choices[i], choices[j])
+                if result != 0: entry[j] = result
+            if len(entry.keys()) > 0: matrix[i] = entry
+        js = """function %s(s,u){ if(s == u) return 1.0;
+                    var c=%s, m=%s, i=c.indexOf(s), j=c.indexOf(u);
+                    try{return m[i][j] || 0;}catch(e){}return 0;}""" % (
+            functionName, 
+            json.dumps(choices, ensure_ascii=False),
+            json.dumps(matrix)
+        )
+        js = js.replace('  ', '').replace('\n', '')
+        return js
+                
+        
+
 
 ##############################################################################
 # Type of Question: `range`
@@ -195,6 +221,14 @@ class RangeTypeQuestion:
         if not saMax is False and userAnswer > saMax: return 0.0
         if not saMin is False and userAnswer < saMin: return 0.0
         return 1.0
+
+    def compileToJS(self, functionName=''):
+        """Returns a JavaScript function, accepting 2 arguments:
+            function functionName(standardAnswer, userAnswer)
+        """
+        return ("""function %s(s,u){var l=s['min'],r=s['max'];
+            if((l !== false && u<l)||(r !== false && u>r)) return 0; return 1;}
+        """ % functionName).replace('  ', '').replace('\n', '')
 
 
 ##############################################################################
@@ -292,50 +326,5 @@ class Question:
     def calculatePoints(self, standardAnswer, userAnswer):
         return self.__core.calculatePoints(standardAnswer, userAnswer)
 
-
-
-if __name__ == '__main__':
-    from tabulate import tabulate
-
-    try:
-        dbpath = sys.argv[1]
-        qid = int(sys.argv[2])
-    except:
-        print("Open a question: python mwquestion.py <DatabasePath> <QuestionID>")
-        exit(1)
-
-    question = Question(dbpath)
-    question.open(qid)
-
-    qrepr = question.getQuestionPresentation()
-
-    print("Question: %s" % question.name)
-    print("Category: %s" % question.category)
-
-    if 'choose' == qrepr['type']:
-        print("Choose one from followings:")
-        answers = []
-        for i in qrepr['plain']:
-            print(" - %s" % i)
-            row = [i]
-            for j in qrepr['plain']:
-                row.append(
-                    question.calculatePoints(i, j)
-                )
-            answers.append(row)
-        print("\nCalculate points using Standard Answer - User Answer:")
-        print(tabulate(answers, headers=['Standard\\UserAns'] + qrepr['plain']))
-
-
-    if 'range' == qrepr['type']:
-        print("Input an integer.")
-
-        if qrepr['min'] is False:
-            print (" - No lower limit on input.")
-        else:
-            print (" - Must be no smaller than %d." % qrepr['min'])
-
-        if qrepr['max'] is False:
-            print (" - No upper limit on input.")
-        else:
-            print (" - Must no larger than %d." % qrepr['max'])
+    def compileToJS(self, functionName=''):
+        return self.__core.compileToJS(functionName)

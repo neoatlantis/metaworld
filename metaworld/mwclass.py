@@ -136,6 +136,7 @@ class Classification:
 
     def save(self):
         """Save the classification using a human-friendly name."""
+        # TODO chars has to be updated to new format accordingly.
         obj = {
             'name': self.name,
             'chars': self.chars,
@@ -146,26 +147,3 @@ class Classification:
     
 def newClassification(dbpath, name):
     return Classification(dbpath, name=name)
-
-
-
-if __name__ == '__main__':
-    from tabulate import tabulate
-
-    try:
-        dbpath = sys.argv[1]
-        cid = int(sys.argv[2])
-    except:
-        print("Open a classification: python mwclass.py <DatabasePath> <ClassID>")
-        exit(1)
-
-    c = Classification(dbpath)
-    c.open(cid)
-
-    print("Classification name: %s" % c.name)
-    print("Following characteristics are defined:")
-    for qid in c.chars:
-        question = c.questions[qid]
-        print(" - %s:" % question.name)
-        for sa, at in c.chars[qid]:
-            print("   * %s freq=%s" % (sa, at['freq']))
