@@ -127,8 +127,10 @@ class ChooseTypeQuestion:
         return 0.0
 
     def compileToJS(self, functionName=''):
-        """Returns a JavaScript function, accepting 2 arguments:
+        """Returns a JavaScript function, accepting 1 or 2 arguments:
             function functionName(standardAnswer, userAnswer)
+           If userAnswer not specified, test standard answer. Otherwise,
+           calculate point from standard user and user answer.
         """
         choices = list(self.__choices.keys())
         matrix = {}
@@ -139,8 +141,10 @@ class ChooseTypeQuestion:
                 result = self.calculatePoints(choices[i], choices[j])
                 if result != 0: entry[j] = result
             if len(entry.keys()) > 0: matrix[i] = entry
-        js = """function %s(s,u){ if(s == u) return 1.0;
+        js = """function %s(s,u){ 
                     var c=%s, m=%s, i=c.indexOf(s), j=c.indexOf(u);
+                    if(undefined == u) return c.indexOf(s) >= 0;
+                    if(s == u) return 1.0;
                     try{return m[i][j] || 0;}catch(e){}return 0;}""" % (
             functionName, 
             json.dumps(choices, ensure_ascii=False),
@@ -223,12 +227,26 @@ class RangeTypeQuestion:
         return 1.0
 
     def compileToJS(self, functionName=''):
-        """Returns a JavaScript function, accepting 2 arguments:
+        """Returns a JavaScript function, accepting 1 or 2 arguments:
             function functionName(standardAnswer, userAnswer)
+           If userAnswer not specified, test standard answer. Otherwise,
+           calculate point from standard user and user answer.
         """
-        return ("""function %s(s,u){var l=s['min'],r=s['max'];
-            if((l !== false && u<l)||(r !== false && u>r)) return 0; return 1;}
-        """ % functionName).replace('  ', '').replace('\n', '')
+        return ("""function %s(s,u){
+            var L=%s, R=%s;
+            var l=s['min'],r=s['max'];
+            if(undefined == u){
+                if((L !== false && l < L) || (R !== false && r > R)) return false;
+                return true;
+            }
+            if((l !== false && u<l)||(r !== false && u>r)) return 0;
+            return 1;
+            }
+        """ % (
+            functionName,
+            json.dumps(self.__min),
+            json.dumps(self.__max)
+        )).replace('  ', '').replace('\n', '')
 
 
 ##############################################################################
