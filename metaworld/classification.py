@@ -44,11 +44,7 @@ class Classification:
         doc = yaml.load(self.__filename)
 
         # get necessary info
-        self.id = int(doc['id'])
-        if int(classid) != self.id:
-            raise Exception(
-                "Classification file %s has inconsistent id " % found + \
-                "between filename and content.")            
+        self.id = int(classid)
         self.name = doc['name']
         self.chars = doc['chars']
         # TODO examine chars(answers) definition
@@ -76,7 +72,6 @@ class Classification:
         """Save the classification using a human-friendly name."""
         obj = {
             'name': self.name,
-            'id': self.id,
             'chars': self.chars,
         }
         doc = yaml.dump(obj, default_flow_style=False, allow_unicode=True)

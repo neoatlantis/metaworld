@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+import yaml
+import sys
+import os
+
+
+
 class QuestionDefinitionError(Exception): pass
 class InvalidStandardAnswer(Exception): pass
 
@@ -14,18 +20,20 @@ def getAllNodes(parents, i0, tree):
         3. a dict, whose keys are nodes and dict[key] are sub-trees.
     Returns ([parents], nodeID, nodeString)
     """
-    if type(tree) == str:
+    isLeaf = lambda i: type(i) in [str, unicode]
+
+    if isLeaf(tree):
         yield (parents, i0+1, tree)
     elif type(tree) == list:
         if len(tree) < 1:
-            raise Exception("Illegal tree definition.")
+            raise Exception("Illegal tree definition - empty list")
         i = i0 
         for node in tree:
-            if type(node) == str:
+            if isLeaf(node):
                 i += 1
                 yield (parents, i, node)
             else:
-                raise Exception("Illegal tree definition.")
+                raise Exception("Illegal tree definition - invalid node")
     elif type(tree) == dict:
         i = i0
         for node in tree:
@@ -36,7 +44,7 @@ def getAllNodes(parents, i0, tree):
                 i += 1
                 yield subnodeResult # yield results from sub iterator
     else:
-        raise Exception("Illegal tree definition.")
+        raise Exception("Illegal tree definition - invalid node")
 
 """test = {
     '1': ['1.1', '1.2'],
@@ -68,12 +76,16 @@ class ChooseTypeQuestion:
             raise QuestionDefinitionError(e)
         self.__choices = choices
         self.__tree = definition
+
+    def dumpDefinition(self):
+        return self.__tree
     
     def getQuestionPresentation(self):
         """Presents the question in a way suitable for generating UI."""
         return {
             'type': 'choose',
-            'choices': self.__tree
+            'tree': self.__tree,
+            'plain': self.__choices.keys(),
         }
 
     def verifyStandardAnswer(self, standardAnswer):
@@ -103,7 +115,7 @@ class ChooseTypeQuestion:
 
 
 ##############################################################################
-# Type of Question: Range
+# Type of Question: `range`
 
 class RangeTypeQuestion:
     """A range type question represents such a way of input, that the
@@ -140,6 +152,12 @@ class RangeTypeQuestion:
             'min': self.__min,
         }
 
+    def dumpDefinition(self):
+        ret = {'min': False, 'max': False}
+        if self.__max: ret['max'] = self.__max
+        if self.__min: ret['min'] = self.__min
+        return ret
+
     def verifyStandardAnswer(self, standardAnswer):
         """Verify if a standard answer definition is legal according to the
         question. A standard answer is the one defined in any classification
@@ -171,39 +189,131 @@ class RangeTypeQuestion:
 
 class Question:
     
-    def __init__(self, **argv):
-        self.__redirected = None
-        pass
+    def __init__(self, dbpath, **argv):
+        self.__dbpath = os.path.join(os.path.realpath(dbpath), 'question')
+        if not os.path.isdir(self.__dbpath):
+            raise Exception("Database not initialized properly.")
 
-    def fromJSON(self, strJSON):
-        pass
+        if argv:
+            # we are being initialized with parameters.
+            self.name = argv['name']
+            self.id = self.__allocateID()
+            self.__filename = os.path.join(self.__dbpath, "%04d-%s.yaml" % (
+                self.id,
+                self.__findFilenameDescription(self.name)
+            ))
 
-    def fromYAML(self, strYAML):
-        pass
+    def open(self, qid):
+        """Open the classification file stored in `self.__dbpath`, which is
+        determined by the id."""
+        # find the file
+        qid = "%03d" % qid
+        dirlist = os.listdir(self.__dbpath)
+        found = None
+        for fn in dirlist:
+            if fn.endswith('.yaml') and fn.startswith(qid):
+                found = fn
+                break
+        if not found:
+            raise Exception("Question #%s not found." % qid)
 
-    def setRedirection(self, newQuestionInstance):
-        """Tell this question has been redirected to another one. Happens
-        when this instance was merged with another."""
-        self.__redirected = newQuestionInstance
+        # read yaml into our class
+        self.__filename = os.path.join(self.__dbpath, found)
+        doc = yaml.load(open(self.__filename).read())
 
-    def getAnswerReference(self, answer):
-        """Get a reference to an answer in this question. This references
-        normally the questionID of this instance and the corresponding
-        answerID, but if our instance was merged with another question
-        instance, this query will be redirected to the new merged instance."""
-        if self.__redirected:
-            return self.__redirected.getAnswerReference(answer)
-        # TODO get answer reference
-
-
-    def __add__(self, other):
-        """Define the add method to merge one question with another. The merged
-        question will have a new questionID, but old question instances can
-        still be answered, which will generate a new link to this new merged
-        instance."""
-
-        newInstance = Question() # TODO argv
+        # get necessary info
+        self.name = doc['name']
         
-        self.setRedirection(newInstance)
-        other.setRedirection(newInstance)
-        return newInstance
+        if 'choose' in doc:
+            self.__core = ChooseTypeQuestion(doc['choose'])
+        elif 'range' in doc:
+            self.__core = RangeTypeQuestion(doc['range'])
+        else:
+            raise QuestionDefinitionError('no specific question defined.')
+
+    def __allocateID(self):
+        """Allocates a 4-digits numeric ID for this classification, basing on
+        existing classifications in `self.__dbpath`."""
+        dirlist = os.listdir(self.__dbpath)
+        maxid = 0
+        for each in dirlist:
+            if not each.endswith('.yaml'): continue
+            try:
+                gotid = int(each.split('-')[0])
+                if gotid > maxid: maxid = gotid
+            except:
+                continue
+        return maxid + 1
+
+    def __findFilenameDescription(self, name):
+        """Provide a suggestion on filename based on `name`."""
+        # TODO filter the name, may be convert to latin names?
+        return name[:30]
+
+    def save(self):
+        """Save the classification using a human-friendly name."""
+        obj = { 'name': self.name }
+        if self.__core is ChooseTypeQuestion:
+            obj['choose'] = self.__core.dumpDefinition()
+        elif self.__core is RangeTypeQuestion:
+            obj['range'] = self.__core.dumpDefinition()
+
+        doc = yaml.dump(obj, default_flow_style=False, allow_unicode=True)
+        open(self.__filename, 'w+').write(doc)
+        return self.__filename
+
+    def getQuestionPresentation(self):
+        return self.__core.getQuestionPresentation()
+
+    def verifyStandardAnswer(self, standardAnswer):
+        return self.__core.verifyStandardAnswer(standardAnswer)
+
+    def calculatePoints(self, standardAnswer, userAnswer):
+        return self.__core.calculatePoints(standardAnswer, userAnswer)
+
+
+
+if __name__ == '__main__':
+    from tabulate import tabulate
+
+    try:
+        dbpath = sys.argv[1]
+        qid = int(sys.argv[2])
+    except:
+        print "Open a question: python question.py <DatabasePath> <QuestionID>"
+        exit(1)
+
+    question = Question(dbpath)
+    question.open(qid)
+
+    qrepr = question.getQuestionPresentation()
+
+    print("Question: %s" % question.name)
+
+    if 'choose' == qrepr['type']:
+        print("Choose one from followings:")
+        answers = []
+        for i in qrepr['plain']:
+            print(" - %s" % i)
+            row = [i]
+            for j in qrepr['plain']:
+                row.append(
+                    question.calculatePoints(i, j)
+                )
+            answers.append(row)
+
+        print tabulate(answers, headers=[' '] + qrepr['plain'])
+
+
+    if 'range' == qrepr['type']:
+        print("Input an integer.")
+
+        if qrepr['min'] is False:
+            print (" - No lower limit on input.")
+        else:
+            print (" - Must be no smaller than %d." % qrepr['min'])
+
+        if qrepr['max'] is False:
+            print (" - No upper limit on input.")
+        else:
+            print (" - Must no larger than %d." % qrepr['max'])
