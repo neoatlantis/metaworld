@@ -194,9 +194,13 @@ class Question:
         if not os.path.isdir(self.__dbpath):
             raise Exception("Database not initialized properly.")
 
+        self.category = ''
+        self.name = ''
+
         if argv:
             # we are being initialized with parameters.
             self.name = argv['name']
+            if 'category' in argv: self.category = argv['category']
             self.id = self.__allocateID()
             self.__filename = os.path.join(self.__dbpath, "%04d-%s.yaml" % (
                 self.id,
@@ -223,6 +227,7 @@ class Question:
 
         # get necessary info
         self.name = doc['name']
+        if 'category' in doc: self.category = doc['category']
         
         if 'choose' in doc:
             self.__core = ChooseTypeQuestion(doc['choose'])
@@ -252,7 +257,7 @@ class Question:
 
     def save(self):
         """Save the classification using a human-friendly name."""
-        obj = { 'name': self.name }
+        obj = { 'name': self.name, 'category': self.category }
         if self.__core is ChooseTypeQuestion:
             obj['choose'] = self.__core.dumpDefinition()
         elif self.__core is RangeTypeQuestion:
@@ -289,6 +294,7 @@ if __name__ == '__main__':
     qrepr = question.getQuestionPresentation()
 
     print("Question: %s" % question.name)
+    print("Category: %s" % question.category)
 
     if 'choose' == qrepr['type']:
         print("Choose one from followings:")
