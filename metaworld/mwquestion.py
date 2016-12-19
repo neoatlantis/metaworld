@@ -24,7 +24,7 @@ def getAllNodes(parents, i0, tree):
 
     Returns ([parents], nodeID, nodeString)
     """
-    isLeaf = lambda i: type(i) in [str, unicode]
+    isLeaf = lambda i: type(i) in [str]
 
     if isLeaf(tree):
         yield (parents, i0+1, tree)
@@ -84,7 +84,7 @@ class ChooseTypeQuestion:
                         "no any 2 choices may have same text."
                     )
                 choices[choice] = (parents, i)
-        except Exception,e:
+        except Exception as e:
             raise QuestionDefinitionError(e)
         self.__choices = choices
         self.__tree = definition
@@ -97,7 +97,7 @@ class ChooseTypeQuestion:
         return {
             'type': 'choose',
             'tree': self.__tree,
-            'plain': self.__choices.keys(),
+            'plain': list(self.__choices.keys()),
         }
 
     def verifyStandardAnswer(self, standardAnswer):
@@ -281,7 +281,10 @@ class Question:
         return self.__filename
 
     def getQuestionPresentation(self):
-        return self.__core.getQuestionPresentation()
+        ret = self.__core.getQuestionPresentation()
+        ret['name'] = self.name
+        ret['category'] = self.category
+        return ret
 
     def verifyStandardAnswer(self, standardAnswer):
         return self.__core.verifyStandardAnswer(standardAnswer)
@@ -298,7 +301,7 @@ if __name__ == '__main__':
         dbpath = sys.argv[1]
         qid = int(sys.argv[2])
     except:
-        print "Open a question: python mwquestion.py <DatabasePath> <QuestionID>"
+        print("Open a question: python mwquestion.py <DatabasePath> <QuestionID>")
         exit(1)
 
     question = Question(dbpath)
@@ -321,7 +324,7 @@ if __name__ == '__main__':
                 )
             answers.append(row)
         print("\nCalculate points using Standard Answer - User Answer:")
-        print tabulate(answers, headers=['Standard\\UserAns'] + qrepr['plain'])
+        print(tabulate(answers, headers=['Standard\\UserAns'] + qrepr['plain']))
 
 
     if 'range' == qrepr['type']:

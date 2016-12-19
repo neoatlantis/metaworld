@@ -5,7 +5,7 @@ import os
 import sys
 import yaml
 
-from mwquestion import Question
+from .mwquestion import Question
 
 def readAttributes(atom):
     ret = {
@@ -35,7 +35,7 @@ def getAllCharDefinitions(defobj):
     def readAtom(atom):
         if type(atom) == dict:
             return (atom["def"], readAttributes(atom))
-        elif type(atom) in [str, unicode, int]:
+        elif type(atom) in [str, int]:
             return (atom, readAttributes({}))
         else:
             raise Exception("Invalid character definition.")
@@ -103,7 +103,7 @@ class Classification:
                 question.open(qid)
                 self.questions[intqid] = question
                 self.chars[intqid] = []
-            except Exception,e:
+            except Exception as e:
                 raise Exception("Characteristics definition error: %s" % e)
             # iterate over characteristics(can be multiple) under one question
             chardefIterator = getAllCharDefinitions(chars[qid])
@@ -156,16 +156,16 @@ if __name__ == '__main__':
         dbpath = sys.argv[1]
         cid = int(sys.argv[2])
     except:
-        print "Open a classification: python mwclass.py <DatabasePath> <ClassID>"
+        print("Open a classification: python mwclass.py <DatabasePath> <ClassID>")
         exit(1)
 
     c = Classification(dbpath)
     c.open(cid)
 
-    print "Classification name: %s" % c.name
-    print "Following characteristics are defined:"
+    print("Classification name: %s" % c.name)
+    print("Following characteristics are defined:")
     for qid in c.chars:
         question = c.questions[qid]
-        print " - %s:" % question.name
+        print(" - %s:" % question.name)
         for sa, at in c.chars[qid]:
-            print "   * %s freq=%s" % (sa, at['freq'])
+            print("   * %s freq=%s" % (sa, at['freq']))
