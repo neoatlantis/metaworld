@@ -6,6 +6,7 @@ import os
 
 
 
+class IllegalTreeDefinition(Exception): pass
 class QuestionDefinitionError(Exception): pass
 class InvalidStandardAnswer(Exception): pass
 
@@ -13,11 +14,14 @@ class InvalidStandardAnswer(Exception): pass
 # Type of Question: `choose`
 
 def getAllNodes(parents, i0, tree):
-    """Return all nodes and subnodes from a tree, with their corresponding
-    ids and parents. A tree can be:
+    """Return all leaves from a tree, with their corresponding ids and parents.
+    A tree node can be:
         1. a single string, this equals a list with one single string.
-        2. a list contains and only contains strings.
-        3. a dict, whose keys are nodes and dict[key] are sub-trees.
+        2. a list containing strings or lists of strings(synonyms).
+        3. a dict, whose keys are string nodes and dict[key] are sub-nodes.
+    Leaves are identified by their IDs. Two leaves may have identical ID, which
+    means they are synonyms. Otherwise they must be different.
+
     Returns ([parents], nodeID, nodeString)
     """
     isLeaf = lambda i: type(i) in [str, unicode]
@@ -26,14 +30,22 @@ def getAllNodes(parents, i0, tree):
         yield (parents, i0+1, tree)
     elif type(tree) == list:
         if len(tree) < 1:
-            raise Exception("Illegal tree definition - empty list")
+            raise IllegalTreeDefinition("empty list")
         i = i0 
         for node in tree:
             if isLeaf(node):
                 i += 1
                 yield (parents, i, node)
+            elif type(node) == list: # list inside list => synonyms
+                i += 1
+                for parallelNode in node: # enumerate all synonyms
+                    if not isLeaf(parallelNode):
+                        raise IllegalTreeDefinition(
+                            "parallel node must be leaves."
+                        )
+                    yield (parents, i, parallelNode) # NOTICE `i` is same
             else:
-                raise Exception("Illegal tree definition - invalid node")
+                raise IllegalTreeDefinition("invalid node")
     elif type(tree) == dict:
         i = i0
         for node in tree:
@@ -44,7 +56,7 @@ def getAllNodes(parents, i0, tree):
                 i += 1
                 yield subnodeResult # yield results from sub iterator
     else:
-        raise Exception("Illegal tree definition - invalid node")
+        raise IllegalTreeDefinition("invalid node")
 
 """test = {
     '1': ['1.1', '1.2'],
@@ -307,8 +319,8 @@ if __name__ == '__main__':
                     question.calculatePoints(i, j)
                 )
             answers.append(row)
-
-        print tabulate(answers, headers=[' '] + qrepr['plain'])
+        print("\nCalculate points using Standard Answer - User Answer:")
+        print tabulate(answers, headers=['Standard\\UserAns'] + qrepr['plain'])
 
 
     if 'range' == qrepr['type']:
