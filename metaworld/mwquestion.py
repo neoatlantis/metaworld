@@ -130,11 +130,12 @@ class ChooseTypeQuestion:
 # Type of Question: `range`
 
 class RangeTypeQuestion:
-    """A range type question represents such a way of input, that the
-    input must be an integer within a given range.
+    """A range type question represents such a way of input, that the input
+    must be an integer within a given range(including border values).
     """
 
     def __verifyAndGetRange(self, definition):
+        if type(definition) == int: return (definition, definition)
         try:
             maximum, minimum = False, False
             if 'min' in definition:
@@ -297,7 +298,7 @@ if __name__ == '__main__':
         dbpath = sys.argv[1]
         qid = int(sys.argv[2])
     except:
-        print "Open a question: python question.py <DatabasePath> <QuestionID>"
+        print "Open a question: python mwquestion.py <DatabasePath> <QuestionID>"
         exit(1)
 
     question = Question(dbpath)
