@@ -63,14 +63,25 @@ ps.subscribe('evt:metadata.refresh', reloadQuestionTree);
 
 
 
-// ---- when user answers changed, update js tree to show which questions were
-//      answered
+// ---- Listens for `evt:ui.filter.changed`, when user answers changed, update
+//      js tree to show which questions were answered.
 
 function updateJstreeMarkAnsweredQuestion(en, userAnswers){
     // TODO
     console.log(userAnswers);
 }
 ps.subscribe('evt:ui.filter.changed', updateJstreeMarkAnsweredQuestion);
+
+
+
+// ---- Accepts command to simulate a selection click on a question, and
+//      fold/unfold necessary trees
+
+function jstreeRedirectToQuestion(en, qid){
+    // TODO
+    ps.publish('evt:ui.filter.question-tree.selection', qid);
+}
+ps.subscribe('cmd:ui.filter.question-tree.redirect', jstreeRedirectToQuestion);
 
 //////////////////////////////////////////////////////////////////////////////
 });

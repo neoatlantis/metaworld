@@ -26,7 +26,8 @@ function updateUserAnswer(qid, newAnswer){
 
 
 
-// ---- on selection of an item in js tree
+// ---- on selection of an item in js tree, change question sheet to
+//      corresponding question, and reflect previous answers.
 
 function onSelectNodeJstree(en, qid){
     if(qid){
