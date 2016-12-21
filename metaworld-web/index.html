@@ -3,6 +3,9 @@
 
 <meta charset="utf-8">
 <title>Metaworld Browser</title>
+
+<link rel="stylesheet" href="themes/default/style.min.css" />
+
 <script src="mwdata.js"></script> <!-- Data to be loaded -->
 <script src="js/ext/require.js" data-main="main"></script>
 <script>
@@ -11,12 +14,45 @@ requirejs.config({
     paths: {
         'jquery': 'ext/jquery',
         'pubsub': 'ext/pubsub',
+        'jstree': 'ext/jstree',
     }
 });
 </script>
+<style>
+    .hidden{ display: none }
+    .mw-question-choice { 
+        border: #0000AA 1px solid;
+        font-size: 0.8em;
+        margin: 2px;
+        padding: 2px;
+    }
+    .mw-question-choice.active {
+        background: #0000AA;
+        color: #FFFFFF;
+    }
+</style>
 
 </head>
 <body>
-</body>
 
+<div class="mw-questions-tree"></div>
+<div class="mw-question-sheet">
+    <div class="mw-no-question">
+        Select and answer a question.
+    </div>
+    <div class="mw-has-question"></div>
+</div>
+
+<div class="hidden" id="templates">
+    <div name="mw-question-choose">
+        <div name="name"></div>
+        <div name="choices">
+            <span class="mw-question-choice" name="choice"></span>
+        </div>
+    </div>
+
+
+</div>
+
+</body>
 </html>
