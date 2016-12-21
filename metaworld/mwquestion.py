@@ -292,6 +292,7 @@ class Question:
 
         # get necessary info
         self.name = doc['name']
+        self.id = int(qid)
         if 'category' in doc: self.category = doc['category']
         
         if 'choose' in doc:
@@ -334,6 +335,7 @@ class Question:
 
     def getQuestionPresentation(self):
         ret = self.__core.getQuestionPresentation()
+        ret['id'] = self.id
         ret['name'] = self.name
         ret['category'] = self.category
         return ret
