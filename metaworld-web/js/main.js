@@ -1,10 +1,12 @@
 require([
     'ui.filter',
+    'ui.browser',
     'dbmanage',
     'jquery',
     'pubsub',
 ], function(
     uiFilter,
+    uiBrowser,
     dbm,
     $,
     ps

@@ -38,6 +38,8 @@ ps.subscribe('evt:document.ready', loadData);
 
 // ---- tool functions for searching database
 
+// -------- questions related
+
 ret.getQuestions = function(){
     var ret = {}, q;
     for(var qid in questions){
@@ -71,6 +73,20 @@ ret.getQuestionCategories = function(){
     for(var i in categories) ret.push(categories[i]);
     return ret;
 }
+
+// -------- classifications related
+
+ret.getClasses = function(){
+    var ret = [];
+    for(var i in classes){
+        ret.push({
+            'name': classes[i].name,
+            'questions': Object.keys(classes[i].chars),
+        });
+    }
+    return ret;
+}
+
 
 return ret;
 
