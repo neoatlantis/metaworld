@@ -29,6 +29,13 @@ function updateUserAnswer(qid, newAnswer){
 // ---- on selection of an item in js tree, change question sheet to
 //      corresponding question, and reflect previous answers.
 
+$(function(){
+    $('.mw-has-question').click(function(){
+        var qid = $(this).data('qid');
+        updateUserAnswer(qid, $(this).questionify('read'));
+    });
+});
+
 function onSelectNodeJstree(en, qid){
     if(qid){
         // a question was selected
@@ -41,15 +48,7 @@ function onSelectNodeJstree(en, qid){
         return;
     }
     var q = dbm.getQuestion(qid);
-    $('.mw-has-question')
-        .empty()
-        .data('qid', qid)
-        .questionify(q, userAnswers[qid])
-        .on('click', function(){
-            var qid = $(this).data('qid');
-            updateUserAnswer(qid, $(this).questionify('read'));
-        })
-    ;
+    $('.mw-has-question').data('qid', qid).questionify(q, userAnswers[qid]);
 }
 ps.subscribe('evt:ui.filter.question-tree.selection', onSelectNodeJstree);
 
